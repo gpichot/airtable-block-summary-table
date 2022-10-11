@@ -14,3 +14,4 @@ The you can define summaries on columns like below:
 
 - [ ] Improve table for responsiveness
 - [ ] Allow to choose column buckets
+- [ ] Add support for views
