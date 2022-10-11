@@ -8,4 +8,4 @@ For now it takes a date-like column and groups records by year.
 
 The you can define summaries on columns like below:
 
-![Summary Table Settings](./assets/summary-table-settings.png)
+![Summary Table Settings](./assets/screenshot-settings.png)
