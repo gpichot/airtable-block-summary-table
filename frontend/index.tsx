@@ -4,6 +4,9 @@ import {
   useRecords,
   useGlobalConfig,
   useSettingsButton,
+  useViewport,
+  Box,
+  Text,
 } from "@airtable/blocks/ui";
 import { Field } from "@airtable/blocks/models";
 import React from "react";
@@ -11,13 +14,33 @@ import Settings from "./Settings";
 import { Summary, SummaryWithField } from "./types";
 import { GlobalConfigKeys } from "./constants";
 
-function HelloWorldTypescriptApp() {
+type Viewport = ReturnType<typeof useViewport>;
+
+function SummaryTableApp() {
   const base = useBase();
   const globalConfig = useGlobalConfig();
+  const viewport = useViewport();
 
-  const [isShowingSettings, setIsShowingSettings] = React.useState(false);
+  const [isShowingSettings, setIsShowingSettings] = React.useState(
+    viewport.isFullscreen
+  );
+  React.useEffect(() => {
+    const onViewportChange = (viewport: Viewport) => {
+      setIsShowingSettings(viewport.isFullscreen);
+    };
+    viewport.watch("isFullscreen", onViewportChange);
+    return () => {
+      viewport.unwatch("isFullscreen", onViewportChange);
+    };
+  }, [viewport]);
+
   useSettingsButton(() => {
-    setIsShowingSettings(!isShowingSettings);
+    const newIsShowingSettings = !isShowingSettings;
+    setIsShowingSettings(newIsShowingSettings);
+
+    if (newIsShowingSettings) {
+      viewport.enterFullscreenIfPossible();
+    }
   });
 
   const tableId = globalConfig.get(GlobalConfigKeys.SelectedTableID) as string;
@@ -41,11 +64,22 @@ function HelloWorldTypescriptApp() {
 
   const data = getGroupedData(records, groupField, summariesWithFields);
 
+  const isEmpty = data.columns.length === 0 || data.rows.length === 0;
+  React.useEffect(() => {
+    if (!isEmpty) return;
+    setIsShowingSettings(true);
+  }, [isEmpty]);
+
   return (
-    <>
+    <Box
+      display="flex"
+      flexDirection="row"
+      alignItems="flex-start"
+      height="100vh"
+    >
       <SummaryTable summaries={data} />
       {isShowingSettings && <Settings />}
-    </>
+    </Box>
   );
 }
 
@@ -81,15 +115,17 @@ function getGroupedData(
   records: any[],
   groupField: Field | null | undefined,
   summariesWithFields: SummaryWithField[]
-) {
+): {
+  columns: string[];
+  rows: {
+    summary: SummaryWithField;
+    values: { year: string; value: string }[];
+  }[];
+} {
   if (!groupField) {
     return {
-      columns: [] as string[],
-      rows: [] as {
-        summary: string;
-        field: Field;
-        values: { year: string; value: string }[];
-      }[],
+      columns: [],
+      rows: [],
     };
   }
 
@@ -102,8 +138,7 @@ function getGroupedData(
     columns: Object.keys(years),
     rows: summariesWithFields.map((summary) => {
       return {
-        summary: summary.summary,
-        field: summary.field,
+        summary: summary,
         values: Object.entries(years).map(([year, records]) => {
           const aggregator = getAggregator(summary.field, summary.summary);
           if (!aggregator) return null;
@@ -119,54 +154,109 @@ function getGroupedData(
   };
 }
 
+function Row({
+  heading,
+  ...props
+}: React.ComponentPropsWithoutRef<"tr"> & {
+  heading?: boolean;
+}) {
+  return (
+    <tr
+      {...props}
+      style={{
+        borderBottom: heading ? "2px solid rgba(0,0,0,0.1)" : "none",
+      }}
+    />
+  );
+}
+
+function Cell({ style, ...props }: React.ComponentPropsWithoutRef<"td">) {
+  return (
+    <td {...props} style={{ border: "1px solid rgba(0,0,0,0.05)", ...style }} />
+  );
+}
+
+function CellHeading({
+  style,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof Cell>) {
+  return (
+    <Cell
+      {...props}
+      style={{
+        ...style,
+        backgroundColor: "#FAFAFA",
+        padding: "10px",
+        fontWeight: "bold",
+      }}
+    />
+  );
+}
+
+function EmptyTable() {
+  return (
+    <Box
+      width="100%"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      height="100%"
+    >
+      <Text fontSize={8}>Use Settings to start</Text>
+    </Box>
+  );
+}
+
 function SummaryTable({
   summaries,
 }: {
   summaries: ReturnType<typeof getGroupedData>;
 }) {
-  console.log(summaries);
-  if (!summaries?.columns?.length) return <p>Use Settings to start</p>;
-  if (!summaries?.rows?.length) return <p>Use Settings to start</p>;
+  if (!summaries?.columns?.length) return <EmptyTable />;
+  if (!summaries?.rows?.length) return <EmptyTable />;
   return (
     <table
       style={{
         tableLayout: "fixed",
         width: "100%",
         borderCollapse: "collapse",
+        margin: "1rem",
       }}
     >
       <thead>
-        <tr>
-          <th></th>
+        <Row heading>
+          <CellHeading></CellHeading>
           {summaries.columns.map((year) => (
-            <th key={year} style={{ textAlign: "right", padding: "10px" }}>
+            <CellHeading key={year} style={{ textAlign: "right" }}>
               {year}
-            </th>
+            </CellHeading>
           ))}
-        </tr>
+        </Row>
       </thead>
       <tbody>
         {summaries.rows.map((row, index) => (
-          <tr
-            key={row.field.id}
+          <Row
+            key={row.summary.field.id}
             style={{
               backgroundColor: index % 2 === 0 ? "white" : "#f5f5f5",
             }}
           >
-            <td style={{ padding: "10px" }}>{row.field.name}</td>
+            <CellHeading style={{ padding: "10px" }}>
+              {row.summary.displayName || row.summary.field.name}
+            </CellHeading>
             {row.values.map((value) => (
-              <td
+              <Cell
                 key={value.year}
                 style={{ textAlign: "right", padding: "10px" }}
               >
                 {value.value}
-              </td>
+              </Cell>
             ))}
-          </tr>
+          </Row>
         ))}
       </tbody>
     </table>
   );
 }
 
-initializeBlock(() => <HelloWorldTypescriptApp />);
+initializeBlock(() => <SummaryTableApp />);
