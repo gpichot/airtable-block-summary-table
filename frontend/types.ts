@@ -1,6 +1,7 @@
 import { Field } from "@airtable/blocks/models";
 export type Summary = {
-  fieldId: string;
+  id: string | null;
+  fieldId: string | null;
   summary: string;
   displayName?: string;
 };

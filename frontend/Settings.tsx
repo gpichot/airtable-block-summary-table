@@ -1,4 +1,5 @@
 import React from "react";
+import { v4 as uuidv4 } from "uuid";
 import {
   FieldPicker,
   TablePickerSynced,
@@ -30,6 +31,36 @@ const dateTypes = [
   FieldType.LAST_MODIFIED_TIME,
 ];
 
+function getNewSummaries(
+  summaries: Summary[],
+  updatedSummary: Summary,
+  field: Field | null
+) {
+  const isNew = !updatedSummary.fieldId;
+
+  if (isNew) {
+    if (!field) {
+      console.error("No field found for new summary");
+      return summaries;
+    }
+    const newSummary = { id: uuidv4(), fieldId: field.id, summary: "sum" };
+    return [...summaries, newSummary];
+  }
+
+  if (!field) {
+    return summaries.filter((s) => s.id !== updatedSummary.id);
+  }
+
+  return summaries.map((s) => {
+    if (s.id !== updatedSummary.id) return s;
+    return {
+      id: s.id,
+      fieldId: field.id,
+      summary: "sum",
+    };
+  });
+}
+
 export default function Settings() {
   const globalConfig = useGlobalConfig();
   const base = useBase();
@@ -40,11 +71,9 @@ export default function Settings() {
   const summaries = (globalConfig.get(GlobalConfigKeys.Summaries) ||
     []) as Summary[];
 
-  const onChange = (field: Field) => {
-    globalConfig.setAsync("summaries", [
-      ...summaries,
-      { fieldId: field.id, summary: "sum" },
-    ]);
+  const onChange = (summary: Summary, field: Field | null) => {
+    const newSummaries = getNewSummaries(summaries, summary, field);
+    globalConfig.setAsync(GlobalConfigKeys.Summaries, newSummaries);
   };
 
   const canEdit = globalConfig.checkPermissionsForSet(
@@ -53,7 +82,7 @@ export default function Settings() {
 
   const onChangeAggregator = (summary: Summary, aggregatorKey: string) => {
     const newSummaries = summaries.map((s) => {
-      if (s.fieldId !== summary.fieldId) return s;
+      if (s.id !== summary.id) return s;
       return { ...s, summary: aggregatorKey };
     });
     globalConfig.setAsync("summaries", newSummaries);
@@ -61,25 +90,28 @@ export default function Settings() {
 
   const onChangeInput = (summary: Summary, value: string) => {
     const newSummaries = summaries.map((s) => {
-      if (s.fieldId !== summary.fieldId) return s;
+      if (s.id !== summary.id) return s;
       return { ...s, displayName: value };
     });
     globalConfig.setAsync("summaries", newSummaries);
   };
 
   const onRemoveSummary = (summary: Summary) => {
-    const newSummaries = summaries.filter((s) => s.fieldId !== summary.fieldId);
+    const newSummaries = summaries.filter((s) => s.id !== summary.id);
     globalConfig.setAsync("summaries", newSummaries);
   };
 
   const fields = new Map(
     summaries.map((summary) => {
-      return [summary.fieldId, table?.getFieldByIdIfExists(summary.fieldId)];
+      return [
+        summary.fieldId,
+        table?.getFieldByIdIfExists(summary.fieldId || ""),
+      ];
     })
   );
 
   const allSummaries = canEdit
-    ? [...summaries, { fieldId: null, summary: "sum" }]
+    ? [...summaries, { id: null, fieldId: null, summary: "sum" }]
     : summaries;
 
   return (
@@ -89,14 +121,26 @@ export default function Settings() {
       padding={3}
       borderBottom="thick"
       alignSelf="stretch"
+      flex="1 0 350px"
+      maxWidth="100vw"
       style={{
         backgroundColor: "#fafafa",
         borderLeft: "2px solid #eeeeee",
+        overflowY: "scroll",
       }}
     >
       <Heading>Summary Table Settings</Heading>
       <FormField label="Table" marginTop={2}>
-        <TablePickerSynced globalConfigKey="selectedTableId" />
+        <TablePickerSynced
+          globalConfigKey="selectedTableId"
+          onChange={(table) => {
+            if (table?.id === tableId) return;
+
+            // Reset the summaries when the table changes
+            globalConfig.setAsync(GlobalConfigKeys.GroupFieldID, null);
+            globalConfig.setAsync(GlobalConfigKeys.Summaries, []);
+          }}
+        />
       </FormField>
       <Divider />
       <FormField label="Group by (Columns)" marginTop={3}>
@@ -120,11 +164,28 @@ export default function Settings() {
             onChangeAggregator={canEdit ? onChangeAggregator : undefined}
             onChangeInput={canEdit ? onChangeInput : undefined}
             onRemoveSummary={canEdit ? onRemoveSummary : undefined}
-            field={fields.get(summary.fieldId)}
+            field={fields.get(summary.fieldId) || null}
           />
         ))}
       </Box>
     </Box>
+  );
+}
+
+function getSummaryDisplayName(summary: Summary, field: Field | null) {
+  if (summary.displayName) return summary.displayName;
+
+  if (field) {
+    const aggregator = field.availableAggregators.find(
+      (x) => x.key === summary.summary
+    );
+    if (!aggregator) return field.name;
+    return `${field.name} (${aggregator.displayName})`;
+  }
+  return (
+    <span style={{ display: "flex", alignItems: "center" }}>
+      <Icon name="plus" /> Add new summary
+    </span>
   );
 }
 
@@ -139,21 +200,27 @@ function SummaryEditor({
 }: {
   summary: Summary;
   field: Field | null;
-  table: Table;
-  onChange?: (field: Field) => void;
+  table: Table | null;
+  onChange?: (summary: Summary, field: Field | null) => void;
   onChangeAggregator?: (summary: Summary, aggregatorKey: string) => void;
   onChangeInput?: (summary: Summary, value: string) => void;
   onRemoveSummary?: (summary: Summary) => void;
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
+
+  const summaryOptions =
+    table
+      ?.getFieldByIdIfExists(summary.fieldId || "")
+      ?.availableAggregators.map((aggregator) => ({
+        value: aggregator.key,
+        label: aggregator.displayName,
+      })) || [];
   return (
     <Box
       key={summary.fieldId}
       borderRadius="large"
       border="default"
       marginBottom={2}
-      width={350}
-      maxWidth="100vw"
     >
       <Button
         variant="secondary"
@@ -171,14 +238,10 @@ function SummaryEditor({
         }}
         onClick={(e) => {
           setIsExpanded(!isExpanded);
-          (e.target as HTMLElement).blur();
+          (e?.target as HTMLElement).blur();
         }}
       >
-        {summary.displayName || field?.name || (
-          <span style={{ display: "flex", alignItems: "center" }}>
-            <Icon name="plus" /> Add new summary
-          </span>
-        )}
+        {getSummaryDisplayName(summary, field)}
       </Button>
       <Box
         padding={2}
@@ -195,10 +258,10 @@ function SummaryEditor({
               table={table}
               field={
                 summary.fieldId
-                  ? table.getFieldByIdIfExists(summary.fieldId)
+                  ? table?.getFieldByIdIfExists(summary.fieldId)
                   : null
               }
-              onChange={onChange}
+              onChange={(field) => onChange?.(summary, field)}
               disabled={!onChange}
             />
           </FormField>
@@ -206,14 +269,9 @@ function SummaryEditor({
             <FormField label="Summary" marginBottom={0}>
               <Select
                 value={summary.summary}
-                options={table
-                  .getFieldByIdIfExists(summary.fieldId)
-                  ?.availableAggregators.map((aggregator) => ({
-                    value: aggregator.key,
-                    label: aggregator.displayName,
-                  }))}
+                options={summaryOptions}
                 onChange={(value) =>
-                  onChangeAggregator(summary, value as string)
+                  onChangeAggregator?.(summary, value as string)
                 }
                 disabled={!onChangeAggregator}
               />
@@ -237,13 +295,13 @@ function SummaryEditor({
               <Input
                 value={summary.displayName || ""}
                 placeholder={field?.name}
-                onChange={(e) => onChangeInput(summary, e.target.value)}
+                onChange={(e) => onChangeInput?.(summary, e.target.value)}
                 disabled={!onChangeInput}
               />
             </FormField>
             <Button
               icon="trash"
-              onClick={() => onRemoveSummary(summary)}
+              onClick={() => onRemoveSummary?.(summary)}
               alignSelf="flex-end"
               variant="danger"
               disabled={!onRemoveSummary}
