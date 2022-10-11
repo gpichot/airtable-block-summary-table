@@ -9,3 +9,8 @@ For now it takes a date-like column and groups records by year.
 The you can define summaries on columns like below:
 
 ![Summary Table Settings](./assets/screenshot-settings.png)
+
+## To Do
+
+- [ ] Improve table for responsiveness
+- [ ] Allow to choose column buckets
