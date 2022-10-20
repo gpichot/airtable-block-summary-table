@@ -4,6 +4,7 @@
     "target": "es2018",
     "sourceMap": true,
     "strict": true,
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "react"
   },
