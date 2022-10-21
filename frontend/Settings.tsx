@@ -1,6 +1,13 @@
 import React from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
+  Droppable,
+  DragDropContext,
+  Draggable,
+  DraggableProvidedDragHandleProps,
+  DropResult,
+} from "react-beautiful-dnd";
+import {
   FieldPicker,
   TablePickerSynced,
   FieldPickerSynced,
@@ -15,6 +22,7 @@ import {
   Heading,
   Icon,
   SwitchSynced,
+  ViewPickerSynced,
 } from "@airtable/blocks/ui";
 import { Field, Table } from "@airtable/blocks/models";
 
@@ -95,6 +103,16 @@ export default function Settings() {
     globalConfig.setAsync("summaries", newSummaries);
   };
 
+  const handleDrop = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const newSummaries = Array.from(summaries);
+    const [removed] = newSummaries.splice(result.source.index, 1);
+    newSummaries.splice(result.destination.index, 0, removed);
+
+    globalConfig.setAsync("summaries", newSummaries);
+  };
+
   const fields = new Map(
     summaries.map((summary) => {
       return [
@@ -115,7 +133,7 @@ export default function Settings() {
       padding={3}
       borderBottom="thick"
       alignSelf="stretch"
-      flex="1 0 350px"
+      flex="0 0 350px"
       maxWidth="100vw"
       style={{
         backgroundColor: "#fafafa",
@@ -135,6 +153,12 @@ export default function Settings() {
               globalConfig.setAsync(GlobalConfigKeys.GroupFieldID, null);
               globalConfig.setAsync(GlobalConfigKeys.Summaries, []);
             }}
+          />
+        </FormField>
+        <FormField label="View">
+          <ViewPickerSynced
+            globalConfigKey={GlobalConfigKeys.SelectedViewID}
+            table={table}
           />
         </FormField>
         <Divider />
@@ -158,19 +182,51 @@ export default function Settings() {
           <Label textColor="default" marginBottom={3}>
             Summaries (Rows)
           </Label>
-          {allSummaries.map((summary, index) => (
-            <SummaryEditor
-              data-testid={`summary-editor-${index}`}
-              key={summary.fieldId}
-              summary={summary}
-              table={table}
-              onChange={canEdit ? onChange : undefined}
-              onChangeAggregator={canEdit ? onChangeAggregator : undefined}
-              onChangeInput={canEdit ? onChangeInput : undefined}
-              onRemoveSummary={canEdit ? onRemoveSummary : undefined}
-              field={fields.get(summary.fieldId) || null}
-            />
-          ))}
+          <DragDropContext onDragEnd={handleDrop}>
+            <Droppable droppableId="summaries">
+              {(provided) => (
+                <div
+                  className="list-container"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {allSummaries.map((summary, index) => (
+                    <Draggable
+                      key={summary.id}
+                      draggableId={summary.id as string}
+                      index={index}
+                    >
+                      {(provided, snapshot) => (
+                        <SummaryEditor
+                          data-testid={`summary-editor-${index}`}
+                          summary={summary}
+                          table={table}
+                          onChange={canEdit ? onChange : undefined}
+                          onChangeAggregator={
+                            canEdit ? onChangeAggregator : undefined
+                          }
+                          onChangeInput={canEdit ? onChangeInput : undefined}
+                          onRemoveSummary={
+                            canEdit ? onRemoveSummary : undefined
+                          }
+                          field={fields.get(summary.fieldId) || null}
+                          className="item-container"
+                          ref={provided.innerRef}
+                          dragHandleProps={provided.dragHandleProps}
+                          {...provided.draggableProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            opacity: snapshot.isDragging ? 0.8 : 1,
+                          }}
+                        />
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </Box>
         <Divider />
 
@@ -197,16 +253,7 @@ function getSummaryDisplayName(summary: Summary, field: Field | null) {
   );
 }
 
-function SummaryEditor({
-  summary,
-  field,
-  table,
-  onChange,
-  onChangeAggregator,
-  onChangeInput,
-  onRemoveSummary,
-  ...divProps
-}: {
+type SummmaryEditorProps = {
   summary: Summary;
   field: Field | null;
   table: Table | null;
@@ -214,7 +261,23 @@ function SummaryEditor({
   onChangeAggregator?: (summary: Summary, aggregatorKey: string) => void;
   onChangeInput?: (summary: Summary, value: string) => void;
   onRemoveSummary?: (summary: Summary) => void;
-} & Omit<React.ComponentPropsWithoutRef<"div">, "onChange">) {
+  dragHandleProps?: DraggableProvidedDragHandleProps;
+} & Omit<React.ComponentPropsWithoutRef<"div">, "onChange">;
+
+function SummaryEditorWithoutRef(
+  {
+    summary,
+    field,
+    table,
+    onChange,
+    onChangeAggregator,
+    onChangeInput,
+    onRemoveSummary,
+    dragHandleProps,
+    ...divProps
+  }: SummmaryEditorProps,
+  ref: React.Ref<HTMLDivElement>
+) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   const summaryOptions =
@@ -225,34 +288,64 @@ function SummaryEditor({
         label: aggregator.displayName,
       })) || [];
   return (
-    <div {...divProps}>
+    <div {...divProps} ref={ref}>
       <Box
         key={summary.fieldId}
         borderRadius="large"
         border="default"
         marginBottom={2}
+        backgroundColor="#fafafa"
       >
-        <Button
-          variant="secondary"
-          marginBottom={isExpanded ? 2 : 0}
+        <button
           style={{
             textAlign: "left",
             paddingLeft: 12,
             justifyContent: "flex-start",
             width: "100%",
-            ...(isExpanded && {
-              backgroundColor: "#efefef",
-              borderRadius: "4px 4px 0 0",
-              borderBottom: "1px solid #e0e0e0",
-            }),
+            color: onChange ? "#000" : "#999",
+            marginBottom: isExpanded ? 2 : 0,
+            outline: "none",
+            border: "none",
+            height: 32,
+
+            cursor: "pointer",
+            ...(isExpanded
+              ? {
+                  backgroundColor: "#efefef",
+                  borderRadius: "4px 4px 0 0",
+                  borderBottom: "1px solid #e0e0e0",
+                }
+              : { borderBottom: "none" }),
           }}
           onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             setIsExpanded(!isExpanded);
             (e?.target as HTMLElement).blur();
           }}
         >
-          {getSummaryDisplayName(summary, field)}
-        </Button>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            {getSummaryDisplayName(summary, field)}
+            {onChange && (
+              <button
+                {...dragHandleProps}
+                style={{
+                  marginLeft: "auto",
+                  border: "none",
+                  backgroundColor: "transparent",
+                }}
+              >
+                <Icon name="dragHandle" />
+              </button>
+            )}
+          </span>
+        </button>
         <Box
           padding={2}
           display="flex"
@@ -325,3 +418,5 @@ function SummaryEditor({
     </div>
   );
 }
+
+const SummaryEditor = React.forwardRef(SummaryEditorWithoutRef);

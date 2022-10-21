@@ -8,7 +8,7 @@ import {
   Box,
   Text,
 } from "@airtable/blocks/ui";
-import { Table } from "@airtable/blocks/models";
+import { Table, View } from "@airtable/blocks/models";
 import Settings from "./Settings";
 import { Summary, SummaryWithField } from "./types";
 import { GlobalConfigKeys } from "./constants";
@@ -45,6 +45,8 @@ export default function SummaryTableApp() {
 
   const tableId = globalConfig.get(GlobalConfigKeys.SelectedTableID) as string;
   const table = base.getTableByIdIfExists(tableId);
+  const viewId = globalConfig.get(GlobalConfigKeys.SelectedViewID) as string;
+  const source = table?.getViewByIdIfExists(viewId);
 
   const groupFieldId = globalConfig.get(
     GlobalConfigKeys.GroupFieldID
@@ -71,7 +73,7 @@ export default function SummaryTableApp() {
     })
     .filter(Boolean) as SummaryWithField[];
 
-  const records = useRecords(table as unknown as Table, {
+  const records = useRecords(source as unknown as Table | View, {
     fields: [groupFieldId, ...summariesFieldIds].filter(Boolean),
   });
 
@@ -90,7 +92,9 @@ export default function SummaryTableApp() {
       alignItems="flex-start"
       height="100vh"
     >
-      <SummaryTable summaries={data} />
+      <Box display="flex" flexDirection="column" flex="1" padding="1rem">
+        <SummaryTable summaries={data} />
+      </Box>
       {isShowingSettings && <Settings />}
     </Box>
   );
@@ -130,7 +134,10 @@ function CellHeading({
         backgroundColor: "#FAFAFA",
         padding: "10px",
         fontWeight: "bold",
+        textOverflow: "ellipsis",
+        overflow: "hidden",
       }}
+      title={props.children as string}
     />
   );
 }
@@ -192,7 +199,6 @@ function SummaryTable({
         tableLayout: "fixed",
         width: "100%",
         borderCollapse: "collapse",
-        margin: "1rem",
       }}
     >
       <thead>

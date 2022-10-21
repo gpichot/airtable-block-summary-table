@@ -5,6 +5,7 @@
   "dependencies": {
     "@airtable/blocks": "1.8.0",
     "react": "^16.9.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^16.9.0",
     "uuid": "^9.0.0"
   },
@@ -14,9 +15,10 @@
     "@testing-library/react": "^12.1.0",
     "@testing-library/user-event": "^12.1.0",
     "@types/jest": "^29.2.0",
+    "@types/react-beautiful-dnd": "^13.1.2",
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^3.0.2",
-    "@typescript-eslint/parser": "^2.15.0",
+    "@typescript-eslint/parser": "^3.0.0",
     "eslint": "^6.3.0",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^2.0.1",

@@ -1,6 +1,7 @@
 import { FieldType } from "@airtable/blocks/models";
 export const GlobalConfigKeys = {
   SelectedTableID: "selectedTableId",
+  SelectedViewID: "selectedViewId",
   GroupFieldID: "groupFieldId",
   Summaries: "summaries",
 };
