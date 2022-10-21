@@ -15,4 +15,8 @@ export const dateTypes = [
 
 export const discreteTypes = [FieldType.SINGLE_LINE_TEXT];
 
-export const allowedTypes = [...dateTypes, ...discreteTypes];
+export const allowedTypes = [
+  ...dateTypes,
+  ...discreteTypes,
+  FieldType.MULTIPLE_LOOKUP_VALUES,
+];

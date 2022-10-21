@@ -23,6 +23,9 @@ const Grouper = {
   text: (fieldValue: string) => {
     return fieldValue;
   },
+  multipleLookupValues: (fieldValue: string) => {
+    return fieldValue[0].value;
+  },
 };
 
 export type GrouperConfig = {
@@ -36,6 +39,9 @@ function getFieldGrouper(groupBy: GrouperConfig) {
 
   if (discreteTypes.includes(groupBy.field.type)) {
     return Grouper.text;
+  }
+  if (groupBy.field.type in Grouper) {
+    return Grouper[groupBy.field.type as keyof typeof Grouper];
   }
 
   throw new Error(`Unsupported field type: ${groupBy.field.type}`);
