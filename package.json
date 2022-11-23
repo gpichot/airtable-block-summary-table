@@ -2,12 +2,12 @@
   "name": "airtable-block-summary-table",
   "version": "1.0.0",
   "scripts": {
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx frontend",
     "format": "prettier --write frontend",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx frontend",
     "prepare": "husky install"
   },
   "lint-staged": {
-    "*.{css,scss,md,mdx,json}": [
+    "*.{css,scss,md,mdx,json,yml,yaml}": [
       "prettier --write"
     ],
     "*.{js,jsx,ts,tsx}": [
