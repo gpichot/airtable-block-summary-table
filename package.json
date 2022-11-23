@@ -1,6 +1,7 @@
 {
   "name": "airtable-block-summary-table",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "block run",
     "format": "prettier --write frontend",
