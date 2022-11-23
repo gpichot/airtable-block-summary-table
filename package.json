@@ -2,9 +2,11 @@
   "name": "airtable-block-summary-table",
   "version": "1.0.0",
   "scripts": {
+    "dev": "block run",
     "format": "prettier --write frontend",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx frontend",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "release": "block release"
   },
   "lint-staged": {
     "*.{css,scss,md,mdx,json,yml,yaml}": [
