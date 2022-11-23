@@ -1,0 +1,17 @@
+name: Release
+
+on: workflow_dispatch
+
+env:
+  HUSKY_SKIP_INSTALL: 1
+  HUSKY_SKIP_HOOKS: 1
+
+jobs:
+  release:
+    name: Release package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v3
