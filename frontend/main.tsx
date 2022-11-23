@@ -1,17 +1,18 @@
 import React from "react";
+import { Table, View } from "@airtable/blocks/models";
 import {
-  useBase,
-  useRecords,
-  useGlobalConfig,
-  useSettingsButton,
-  useViewport,
   Box,
   Text,
+  useBase,
+  useGlobalConfig,
+  useRecords,
+  useSettingsButton,
+  useViewport,
 } from "@airtable/blocks/ui";
-import { Table, View } from "@airtable/blocks/models";
+
+import { GlobalConfigKeys } from "./constants";
 import Settings from "./Settings";
 import { Summary, SummaryWithField } from "./types";
-import { GlobalConfigKeys } from "./constants";
 import { getGroupedData } from "./utils";
 
 type Viewport = ReturnType<typeof useViewport>;

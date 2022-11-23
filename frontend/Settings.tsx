@@ -1,30 +1,30 @@
 import React from "react";
-import { v4 as uuidv4 } from "uuid";
 import {
-  Droppable,
   DragDropContext,
   Draggable,
   DraggableProvidedDragHandleProps,
+  Droppable,
   DropResult,
 } from "react-beautiful-dnd";
+import { Field, Table } from "@airtable/blocks/models";
 import {
-  FieldPicker,
-  TablePickerSynced,
-  FieldPickerSynced,
-  useGlobalConfig,
-  useBase,
   Box,
-  FormField,
-  Select,
-  Label,
-  Input,
   Button,
+  FieldPicker,
+  FieldPickerSynced,
+  FormField,
   Heading,
   Icon,
+  Input,
+  Label,
+  Select,
   SwitchSynced,
+  TablePickerSynced,
+  useBase,
+  useGlobalConfig,
   ViewPickerSynced,
 } from "@airtable/blocks/ui";
-import { Field, Table } from "@airtable/blocks/models";
+import { v4 as uuidv4 } from "uuid";
 
 import { allowedTypes, GlobalConfigKeys } from "./constants";
 import { Summary } from "./types";
@@ -198,9 +198,13 @@ export default function Settings() {
                     >
                       {(provided, snapshot) => (
                         <SummaryEditor
+                          ref={provided.innerRef}
                           data-testid={`summary-editor-${index}`}
                           summary={summary}
                           table={table}
+                          field={fields.get(summary.fieldId) || null}
+                          className="item-container"
+                          dragHandleProps={provided.dragHandleProps}
                           onChange={canEdit ? onChange : undefined}
                           onChangeAggregator={
                             canEdit ? onChangeAggregator : undefined
@@ -209,10 +213,6 @@ export default function Settings() {
                           onRemoveSummary={
                             canEdit ? onRemoveSummary : undefined
                           }
-                          field={fields.get(summary.fieldId) || null}
-                          className="item-container"
-                          ref={provided.innerRef}
-                          dragHandleProps={provided.dragHandleProps}
                           {...provided.draggableProps}
                           style={{
                             ...provided.draggableProps.style,
@@ -364,8 +364,8 @@ function SummaryEditorWithoutRef(
                     ? table?.getFieldByIdIfExists(summary.fieldId)
                     : null
                 }
-                onChange={(field) => onChange?.(summary, field)}
                 disabled={!onChange}
+                onChange={(field) => onChange?.(summary, field)}
               />
             </FormField>
             {summary.fieldId ? (
@@ -373,10 +373,10 @@ function SummaryEditorWithoutRef(
                 <Select
                   value={summary.summary}
                   options={summaryOptions}
+                  disabled={!onChangeAggregator}
                   onChange={(value) =>
                     onChangeAggregator?.(summary, value as string)
                   }
-                  disabled={!onChangeAggregator}
                 />
               </FormField>
             ) : (
@@ -398,16 +398,16 @@ function SummaryEditorWithoutRef(
                 <Input
                   value={summary.displayName || ""}
                   placeholder={field?.name}
-                  onChange={(e) => onChangeInput?.(summary, e.target.value)}
                   disabled={!onChangeInput}
+                  onChange={(e) => onChangeInput?.(summary, e.target.value)}
                 />
               </FormField>
               <Button
                 icon="trash"
-                onClick={() => onRemoveSummary?.(summary)}
                 alignSelf="flex-end"
                 variant="danger"
                 disabled={!onRemoveSummary}
+                onClick={() => onRemoveSummary?.(summary)}
               >
                 Remove
               </Button>
