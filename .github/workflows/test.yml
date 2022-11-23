@@ -18,7 +18,7 @@ jobs:
       - name: Install
         run: npm install
       - name: Check Format
-        run: npm exec prettier -c src '*.json' '*.cjs' '*.ts' '*.tsx'
+        run: npm exec prettier -- --write frontend '*.json' '*.cjs'
       - name: Check Lint
         run: npm exec eslint
       # - name: Tests
