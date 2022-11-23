@@ -18,8 +18,8 @@ jobs:
       - name: Install
         run: npm install
       - name: Check Format
-        run: npm run prettier -c src '*.json' '*.cjs' '*.ts' '*.tsx'
+        run: npm exec prettier -c src '*.json' '*.cjs' '*.ts' '*.tsx'
       - name: Check Lint
-        run: npm run eslint
+        run: npm exec eslint
       # - name: Tests
       #   run: yarn run test
