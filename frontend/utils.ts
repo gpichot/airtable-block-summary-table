@@ -1,10 +1,10 @@
-import { Field } from "@airtable/blocks/models";
+import { Field, Record as AirtableRecord } from "@airtable/blocks/models";
 import { dateTypes, discreteTypes } from "./constants";
 import { SummaryWithField } from "./types";
 
 function groupBy<T>(array: T[], selector: (item: T) => string | number) {
   const groups: Record<string, T[]> = {};
-  array.forEach((item) => {
+  (array || []).forEach((item) => {
     const key = selector(item);
     if (groups[key]) {
       groups[key].push(item);
@@ -23,7 +23,7 @@ const Grouper = {
   text: (fieldValue: string) => {
     return fieldValue;
   },
-  multipleLookupValues: (fieldValue: string) => {
+  multipleLookupValues: (fieldValue: { value: string }[]) => {
     return fieldValue[0].value;
   },
 };
@@ -48,13 +48,13 @@ function getFieldGrouper(groupBy: GrouperConfig) {
 }
 
 export function groupRecords(
-  records: any[],
+  records: AirtableRecord[],
   groupByConfig: GrouperConfig
 ): Record<string, any[]> {
   const fieldGrouper = getFieldGrouper(groupByConfig);
 
   return groupBy(records, (record) =>
-    fieldGrouper(record.getCellValue(groupByConfig.field.name))
+    fieldGrouper(record.getCellValue(groupByConfig.field.name) as any)
   );
 }
 
@@ -80,7 +80,7 @@ function normalizeDisplayValue(value: string | number) {
 }
 
 export function getGroupedData(
-  records: any[],
+  records: AirtableRecord[],
   groupField: Field | null | undefined,
   summariesWithFields: SummaryWithField[]
 ): {

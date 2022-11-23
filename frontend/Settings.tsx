@@ -193,7 +193,7 @@ export default function Settings() {
                   {allSummaries.map((summary, index) => (
                     <Draggable
                       key={summary.id}
-                      draggableId={summary.id as string}
+                      draggableId={summary.id || "$$new-summary"}
                       index={index}
                     >
                       {(provided, snapshot) => (
