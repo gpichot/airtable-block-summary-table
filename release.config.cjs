@@ -16,4 +16,9 @@ module.exports = {
     ],
   ],
   publish: ["@semantic-release/github"],
+  verifyConditions: [
+    "@semantic-release/changelog",
+    "@semantic-release/github",
+    "@semantic-release/git",
+  ],
 };
