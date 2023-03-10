@@ -1,90 +1,43 @@
 import React from "react";
-import { Table, View } from "@airtable/blocks/models";
-import {
-  Box,
-  Text,
-  useBase,
-  useGlobalConfig,
-  useRecords,
-  useSettingsButton,
-  useViewport,
-} from "@airtable/blocks/ui";
+import { View } from "@airtable/blocks/models";
+import { Box, useRecords } from "@airtable/blocks/ui";
 
-import { GlobalConfigKeys } from "./constants";
+import EmptyTable from "./components/Canvas/EmptyTable";
+import SummaryTable from "./components/Canvas/SummaryTable";
+import { isTableEmpty } from "./components/Canvas/utilities";
+import useAdaptiveSettingsButton from "./hooks/useAdaptiveSettingsButton";
+import { useSummaryTableConfig } from "./hooks/useSummaryTableConfig";
 import Settings from "./Settings";
-import { Summary, SummaryWithField } from "./types";
 import { getGroupedData } from "./utils";
 
-type Viewport = ReturnType<typeof useViewport>;
-
 export default function SummaryTableApp() {
-  const base = useBase();
-  const globalConfig = useGlobalConfig();
-  const viewport = useViewport();
+  const [isShowingSettings, setIsShowingSettings] = useAdaptiveSettingsButton();
 
-  const [isShowingSettings, setIsShowingSettings] = React.useState(
-    viewport.isFullscreen
+  const config = useSummaryTableConfig();
+
+  const records = useRecords(config.source as unknown as View, {
+    fields: config.fieldsIds,
+  });
+
+  const data = getGroupedData(
+    records,
+    config.groupField,
+    config.summariesWithFields
   );
-  React.useEffect(() => {
-    const onViewportChange = (viewport: Viewport) => {
-      setIsShowingSettings(viewport.isFullscreen);
-    };
-    viewport.watch("isFullscreen", onViewportChange);
-    return () => {
-      viewport.unwatch("isFullscreen", onViewportChange);
-    };
-  }, [viewport]);
-
-  useSettingsButton(() => {
-    const newIsShowingSettings = !isShowingSettings;
-    setIsShowingSettings(newIsShowingSettings);
-
-    if (newIsShowingSettings) {
-      viewport.enterFullscreenIfPossible();
-    }
-  });
-
-  const tableId = globalConfig.get(GlobalConfigKeys.SelectedTableID) as string;
-  const table = base.getTableByIdIfExists(tableId);
-  const viewId = globalConfig.get(GlobalConfigKeys.SelectedViewID) as string;
-  const source = table?.getViewByIdIfExists(viewId);
-
-  const groupFieldId = globalConfig.get(
-    GlobalConfigKeys.GroupFieldID
-  ) as string;
-  const groupField = table?.getFieldByIdIfExists(groupFieldId);
-
-  const summaries = (globalConfig.get(GlobalConfigKeys.Summaries) ||
-    []) as Summary[];
-
-  const validSummaries = summaries.filter((x) =>
-    Boolean(x.fieldId)
-  ) as (Summary & {
-    fieldId: string;
-  })[];
-  const summariesFieldIds = validSummaries.map((summary) => summary.fieldId);
-  const summariesWithFields = validSummaries
-    .map((summary) => {
-      const field = table?.getFieldByIdIfExists(summary.fieldId);
-      if (!field) return null;
-      return {
-        ...summary,
-        field,
-      };
-    })
-    .filter(Boolean) as SummaryWithField[];
-
-  const records = useRecords(source as unknown as Table | View, {
-    fields: [groupFieldId, ...summariesFieldIds].filter(Boolean),
-  });
-
-  const data = getGroupedData(records, groupField, summariesWithFields);
 
   const isEmpty = data.columns.length === 0 || data.rows.length === 0;
+
+  // If data becomes empty, show settings
   React.useEffect(() => {
     if (!isEmpty) return;
     setIsShowingSettings(true);
-  }, [isEmpty]);
+  }, [isEmpty, setIsShowingSettings]);
+
+  const tableElement = isTableEmpty(data) ? (
+    <EmptyTable />
+  ) : (
+    <SummaryTable summaries={data} transpose={config.isTableTransposed} />
+  );
 
   return (
     <Box
@@ -94,150 +47,9 @@ export default function SummaryTableApp() {
       height="100vh"
     >
       <Box display="flex" flexDirection="column" flex="1" padding="1rem">
-        <SummaryTable summaries={data} />
+        {tableElement}
       </Box>
       {isShowingSettings && <Settings />}
     </Box>
-  );
-}
-
-function Row({
-  heading,
-  ...props
-}: React.ComponentPropsWithoutRef<"tr"> & {
-  heading?: boolean;
-}) {
-  return (
-    <tr
-      {...props}
-      style={{
-        borderBottom: heading ? "2px solid rgba(0,0,0,0.1)" : "none",
-      }}
-    />
-  );
-}
-
-function Cell({ style, ...props }: React.ComponentPropsWithoutRef<"td">) {
-  return (
-    <td {...props} style={{ border: "1px solid rgba(0,0,0,0.05)", ...style }} />
-  );
-}
-
-function CellHeading({
-  style,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof Cell>) {
-  return (
-    <Cell
-      {...props}
-      style={{
-        ...style,
-        backgroundColor: "#FAFAFA",
-        padding: "10px",
-        fontWeight: "bold",
-        textOverflow: "ellipsis",
-        overflow: "hidden",
-      }}
-      title={props.children as string}
-    />
-  );
-}
-
-function EmptyTable() {
-  return (
-    <Box
-      width="100%"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      height="100%"
-    >
-      <Text fontSize={8}>Use Settings to start</Text>
-    </Box>
-  );
-}
-
-function transposeTable<T>(table: T[][]): T[][] {
-  return table[0].map((_, colIndex) => {
-    return table.map((row) => row[colIndex]);
-  });
-}
-
-function SummaryTable({
-  summaries,
-}: {
-  summaries: ReturnType<typeof getGroupedData>;
-}) {
-  const isTableTransposed = useGlobalConfig().get("transpose") as boolean;
-
-  if (!summaries?.columns?.length) return <EmptyTable />;
-  if (!summaries?.rows?.length) return <EmptyTable />;
-
-  const table = [
-    [
-      { value: undefined, id: "top" },
-      ...summaries.columns.map((x) => ({ value: x, id: x })),
-    ],
-    ...summaries.rows.map((row) => {
-      return [
-        {
-          value: row.summary.displayName || row.summary.field.name,
-          id: row.summary.field.id,
-        },
-        ...row.values.map((x) => ({
-          value: x?.value,
-          id: `${x?.year}-${row.summary.field.id}`,
-        })),
-      ];
-    }),
-  ];
-
-  const finalTable = isTableTransposed ? transposeTable(table) : table;
-
-  return (
-    <table
-      style={{
-        tableLayout: "fixed",
-        width: "100%",
-        borderCollapse: "collapse",
-      }}
-    >
-      <thead>
-        <Row heading>
-          {finalTable[0].map(({ value, id }) => (
-            <CellHeading key={id} style={{ textAlign: "right" }}>
-              {value}
-            </CellHeading>
-          ))}
-        </Row>
-      </thead>
-      <tbody>
-        {finalTable.slice(1).map((row, index) => {
-          const cells = row.slice(1);
-          return (
-            <Row
-              key={index}
-              style={{
-                backgroundColor: index % 2 === 0 ? "white" : "#f5f5f5",
-              }}
-            >
-              <CellHeading style={{ padding: "10px" }}>
-                {row[0].value}
-              </CellHeading>
-              {cells.map(({ value, id }) =>
-                value ? (
-                  <Cell
-                    key={id}
-                    style={{ textAlign: "right", padding: "10px" }}
-                  >
-                    {value}
-                  </Cell>
-                ) : null
-              )}
-            </Row>
-          );
-        })}
-      </tbody>
-    </table>
   );
 }

@@ -1,12 +1,5 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2018",
-    "sourceMap": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "jsx": "react"
-  },
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@tsconfig/create-react-app",
   "exclude": ["node_modules"]
 }

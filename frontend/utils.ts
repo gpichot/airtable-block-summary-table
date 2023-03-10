@@ -1,4 +1,5 @@
 import { Field, Record as AirtableRecord } from "@airtable/blocks/models";
+
 import { dateTypes, discreteTypes } from "./constants";
 import { SummaryWithField } from "./types";
 
@@ -24,7 +25,7 @@ const Grouper = {
     return fieldValue;
   },
   multipleLookupValues: (fieldValue: { value: string }[]) => {
-    return fieldValue[0].value;
+    return fieldValue?.[0].value;
   },
 };
 
@@ -32,7 +33,11 @@ export type GrouperConfig = {
   field: Field;
 };
 
-function getFieldGrouper(groupBy: GrouperConfig) {
+function getFieldGrouper(
+  groupBy: GrouperConfig
+):
+  | ((fieldValue: string) => string | number)
+  | ((fieldValue: { value: string }[]) => string | number) {
   if (dateTypes.includes(groupBy.field.type)) {
     return Grouper.date;
   }
@@ -47,15 +52,33 @@ function getFieldGrouper(groupBy: GrouperConfig) {
   throw new Error(`Unsupported field type: ${groupBy.field.type}`);
 }
 
+type RecordValue = string | { value: string } | { value: { name: string } };
+
+function normalizeValue(value: RecordValue): string {
+  if (typeof value === "string") return value;
+  if (value?.value) {
+    if (typeof value.value === "string") return value.value;
+    if (value.value.name) return value.value.name;
+    return "❓";
+  }
+  return value as unknown as string;
+}
+
 export function groupRecords(
   records: AirtableRecord[],
   groupByConfig: GrouperConfig
 ): Record<string, any[]> {
   const fieldGrouper = getFieldGrouper(groupByConfig);
 
-  return groupBy(records, (record) =>
-    fieldGrouper(record.getCellValue(groupByConfig.field.name) as any)
+  console.log(
+    groupByConfig.field.name,
+    records[0].getCellValue(groupByConfig.field.name)
   );
+
+  return groupBy(records, (record) => {
+    const value = record.getCellValue(groupByConfig.field.name) as RecordValue;
+    return fieldGrouper(normalizeValue(value) as any);
+  });
 }
 
 function getAggregator(field: Field, name: string) {
@@ -80,7 +103,7 @@ function normalizeDisplayValue(value: string | number) {
 }
 
 export function getGroupedData(
-  records: AirtableRecord[],
+  records: AirtableRecord[] | null,
   groupField: Field | null | undefined,
   summariesWithFields: SummaryWithField[]
 ): {
@@ -90,7 +113,7 @@ export function getGroupedData(
     values: ({ year: string; value: string | number } | null)[];
   }[];
 } {
-  if (!groupField) {
+  if (!groupField || !records) {
     return {
       columns: [],
       rows: [],
@@ -120,3 +143,5 @@ export function getGroupedData(
     }),
   };
 }
+
+export type GroupedData = ReturnType<typeof getGroupedData>;

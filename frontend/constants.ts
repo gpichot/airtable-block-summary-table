@@ -1,4 +1,5 @@
 import { FieldType } from "@airtable/blocks/models";
+
 export const GlobalConfigKeys = {
   SelectedTableID: "selectedTableId",
   SelectedViewID: "selectedViewId",
@@ -13,7 +14,7 @@ export const dateTypes = [
   FieldType.LAST_MODIFIED_TIME,
 ];
 
-export const discreteTypes = [FieldType.SINGLE_LINE_TEXT];
+export const discreteTypes = [FieldType.SINGLE_LINE_TEXT, FieldType.FORMULA];
 
 export const allowedTypes = [
   ...dateTypes,
