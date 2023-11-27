@@ -1,4 +1,5 @@
 import { Field } from "@airtable/blocks/models";
+
 export type Summary = {
   id: string | null;
   fieldId: string | null;

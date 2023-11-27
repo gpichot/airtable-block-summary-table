@@ -12,7 +12,7 @@ export function transposeTable<T>(table: T[][]): T[][] {
 
 export function convertGroupedDataToTable(
   groupedData: GroupedData,
-  { transpose = false }: { transpose?: boolean } = {}
+  { transpose = false }: { transpose?: boolean } = {},
 ): {
   value: string | number | undefined;
   id: string;

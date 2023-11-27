@@ -91,7 +91,7 @@ export default function SummaryTable({
                   >
                     {value}
                   </Cell>
-                ) : null
+                ) : null,
               )}
             </Row>
           );

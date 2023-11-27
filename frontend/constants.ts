@@ -14,7 +14,11 @@ export const dateTypes = [
   FieldType.LAST_MODIFIED_TIME,
 ];
 
-export const discreteTypes = [FieldType.SINGLE_LINE_TEXT, FieldType.FORMULA];
+export const discreteTypes = [
+  FieldType.SINGLE_LINE_TEXT,
+  FieldType.FORMULA,
+  FieldType.SINGLE_SELECT,
+];
 
 export const allowedTypes = [
   ...dateTypes,

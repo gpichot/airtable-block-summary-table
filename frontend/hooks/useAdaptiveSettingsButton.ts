@@ -10,7 +10,7 @@ export default function useAdaptiveSettingsButton() {
   const viewport = useViewport();
 
   const [isShowingSettings, setIsShowingSettings] = React.useState(
-    viewport.isFullscreen
+    viewport.isFullscreen,
   );
   React.useEffect(() => {
     const onViewportChange = (viewport: Viewport) => {

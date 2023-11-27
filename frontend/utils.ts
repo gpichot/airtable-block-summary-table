@@ -34,7 +34,7 @@ export type GrouperConfig = {
 };
 
 function getFieldGrouper(
-  groupBy: GrouperConfig
+  groupBy: GrouperConfig,
 ):
   | ((fieldValue: string) => string | number)
   | ((fieldValue: { value: string }[]) => string | number) {
@@ -52,10 +52,15 @@ function getFieldGrouper(
   throw new Error(`Unsupported field type: ${groupBy.field.type}`);
 }
 
-type RecordValue = string | { value: string } | { value: { name: string } };
+type RecordValue =
+  | string
+  | { name: string }
+  | { value: string }
+  | { value: { name: string } };
 
 function normalizeValue(value: RecordValue): string {
   if (typeof value === "string") return value;
+  if ("name" in value) return value.name;
   if (value?.value) {
     if (typeof value.value === "string") return value.value;
     if (value.value.name) return value.value.name;
@@ -66,17 +71,18 @@ function normalizeValue(value: RecordValue): string {
 
 export function groupRecords(
   records: AirtableRecord[],
-  groupByConfig: GrouperConfig
-): Record<string, any[]> {
+  groupByConfig: GrouperConfig,
+): Record<string, unknown[]> {
   const fieldGrouper = getFieldGrouper(groupByConfig);
 
   console.log(
     groupByConfig.field.name,
-    records[0].getCellValue(groupByConfig.field.name)
+    records[0].getCellValue(groupByConfig.field.name),
   );
 
   return groupBy(records, (record) => {
     const value = record.getCellValue(groupByConfig.field.name) as RecordValue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return fieldGrouper(normalizeValue(value) as any);
   });
 }
@@ -105,7 +111,7 @@ function normalizeDisplayValue(value: string | number) {
 export function getGroupedData(
   records: AirtableRecord[] | null,
   groupField: Field | null | undefined,
-  summariesWithFields: SummaryWithField[]
+  summariesWithFields: SummaryWithField[],
 ): {
   columns: string[];
   rows: {

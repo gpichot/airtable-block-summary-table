@@ -22,7 +22,7 @@ export default function SummaryTableApp() {
   const data = getGroupedData(
     records,
     config.groupField,
-    config.summariesWithFields
+    config.summariesWithFields,
   );
 
   const isEmpty = data.columns.length === 0 || data.rows.length === 0;

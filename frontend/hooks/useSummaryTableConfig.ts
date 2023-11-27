@@ -17,7 +17,7 @@ export function useSummaryTableConfig() {
   const source = table?.getViewByIdIfExists(viewId);
 
   const groupFieldId = globalConfig.get(
-    GlobalConfigKeys.GroupFieldID
+    GlobalConfigKeys.GroupFieldID,
   ) as string;
   const groupField = table?.getFieldByIdIfExists(groupFieldId);
 
@@ -25,7 +25,7 @@ export function useSummaryTableConfig() {
     []) as Summary[];
 
   const validSummaries = summaries.filter((x) =>
-    Boolean(x.fieldId)
+    Boolean(x.fieldId),
   ) as (Summary & {
     fieldId: string;
   })[];

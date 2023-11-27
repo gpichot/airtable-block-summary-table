@@ -8,6 +8,6 @@ declare module "@airtable/blocks/ui" {
    */
   export function useRecords(
     tableOrViewOrQueryResult: View | null,
-    opts?: { fields: string[] }
+    opts?: { fields: string[] },
   ): Array<Record> | null;
 }

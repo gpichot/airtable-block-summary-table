@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@tsconfig/create-react-app",
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "include": ["./setupTests.ts", "./frontend/**/*"]
 }

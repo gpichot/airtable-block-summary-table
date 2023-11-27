@@ -36,7 +36,7 @@ function Divider() {
 function getNewSummaries(
   summaries: Summary[],
   updatedSummary: Summary,
-  field: Field | null
+  field: Field | null,
 ) {
   const isNew = !updatedSummary.fieldId;
 
@@ -79,7 +79,7 @@ export default function Settings() {
   };
 
   const canEdit = globalConfig.checkPermissionsForSet(
-    GlobalConfigKeys.Summaries
+    GlobalConfigKeys.Summaries,
   ).hasPermission;
 
   const onChangeAggregator = (summary: Summary, aggregatorKey: string) => {
@@ -119,7 +119,7 @@ export default function Settings() {
         summary.fieldId,
         table?.getFieldByIdIfExists(summary.fieldId || ""),
       ];
-    })
+    }),
   );
 
   const allSummaries = canEdit
@@ -241,7 +241,7 @@ function getSummaryDisplayName(summary: Summary, field: Field | null) {
 
   if (field) {
     const aggregator = field.availableAggregators.find(
-      (x) => x.key === summary.summary
+      (x) => x.key === summary.summary,
     );
     if (!aggregator) return field.name;
     return `${field.name} (${aggregator.displayName})`;
@@ -276,7 +276,7 @@ function SummaryEditorWithoutRef(
     dragHandleProps,
     ...divProps
   }: SummmaryEditorProps,
-  ref: React.Ref<HTMLDivElement>
+  ref: React.Ref<HTMLDivElement>,
 ) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
