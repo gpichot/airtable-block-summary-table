@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/gpichot/airtable-block-summary-table/compare/v1.0.0...v1.1.0) (2023-12-14)
+
+
+### Features
+
+* add privacy policy ([45da459](https://github.com/gpichot/airtable-block-summary-table/commit/45da459809dc7790ff84847e8b1351c154979e87))
+* add terms and conditions ([0b86004](https://github.com/gpichot/airtable-block-summary-table/commit/0b860044dc69e1849449df928086760e2cd35c60))
+* support field type formula ([adf1d24](https://github.com/gpichot/airtable-block-summary-table/commit/adf1d24fa0d0e0d71ddb0d637d87b369b0e4dca4))
+
 # 1.0.0 (2022-11-23)
 
 

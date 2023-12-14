@@ -1,6 +1,6 @@
 {
   "name": "airtable-block-summary-table",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "block run",
